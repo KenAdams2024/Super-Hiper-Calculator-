@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Super HiPER CAS</title>
+    <script src="https://tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://jsdelivr.net">
+    <script defer src="https://jsdelivr.net"></script>
+    <style>
+        body { touch-action: manipulation; }
+        .calc-btn { transition: all 0.1s ease; -webkit-tap-highlight-color: transparent; }
+        .calc-btn:active { transform: scale(0.92); filter: brightness(1.2); }
+    </style>
+</head>
+<body class="bg-slate-950 text-white font-sans flex flex-col h-screen justify-between select-none overflow-hidden">
+
+    <!-- Viewport Display Container -->
+    <div class="p-4 flex-grow flex flex-col justify-end bg-gradient-to-b from-slate-900 to-slate-950 border-b border-slate-800/50">
+        <div class="text-right text-xs text-slate-500 font-mono tracking-widest uppercase mb-1">SymPy CAS Core • 500 Digits Max</div>
+        <input id="input-buffer" type="text" class="w-full bg-transparent text-right text-xl font-mono text-cyan-400 outline-none mb-2" placeholder="0" readonly>
+        <div id="latex-display" class="text-right text-3xl font-light text-slate-100 overflow-x-auto overflow-y-hidden py-2 min-h-[3.5rem] whitespace-nowrap"></div>
+        <div id="numerical-display" class="text-right text-md font-mono text-amber-400 mt-1 min-h-[1.5rem] overflow-x-auto whitespace-nowrap opacity-80"></div>
+    </div>
+
+    <!-- Interface Controls Panel -->
+    <div class="bg-slate-900 p-2 pb-6 grid grid-cols-5 gap-1.5 shadow-2xl border-t border-slate-800">
+        <button onclick="appendToken('diff(')" class="calc-btn bg-slate-800 text-cyan-400 rounded-lg p-3 text-sm font-semibold font-mono">d/dx</button>
+        <button onclick="appendToken('integrate(')" class="calc-btn bg-slate-800 text-cyan-400 rounded-lg p-3 text-sm font-semibold font-mono">∫</button>
+        <button onclick="appendToken('limit(')" class="calc-btn bg-slate-800 text-cyan-400 rounded-lg p-3 text-sm font-semibold font-mono">lim</button>
+        <button onclick="appendToken(', x)')" class="calc-btn bg-slate-800 text-slate-400 rounded-lg p-3 text-sm font-mono">,x)</button>
+        <button onclick="appendToken('x')" class="calc-btn bg-slate-800 text-amber-500 rounded-lg p-3 font-bold font-mono">X</button>
+
+        <button onclick="appendToken('sqrt(')" class="calc-btn bg-slate-800 text-slate-300 rounded-lg p-3 text-sm font-mono">√</button>
+        <button onclick="appendToken('^')" class="calc-btn bg-slate-800 text-slate-300 rounded-lg p-3 text-sm font-mono">xʸ</button>
+        <button onclick="appendToken('log(')" class="calc-btn bg-slate-800 text-slate-300 rounded-lg p-3 text-sm font-mono">log</button>
+        <button onclick="appendToken('(')" class="calc-btn bg-slate-800 text-slate-400 rounded-lg p-3 font-mono">(</button>
+        <button onclick="appendToken(')')" class="calc-btn bg-slate-800 text-slate-400 rounded-lg p-3 font-mono">)</button>
+
+        <button onclick="appendToken('7')" class="calc-btn bg-slate-700/60 rounded-lg p-4 text-xl font-medium font-mono">7</button>
+        <button onclick="appendToken('8')" class="calc-btn bg-slate-700/60 rounded-lg p-4 text-xl font-medium font-mono">8</button>
+        <button onclick="appendToken('9')" class="calc-btn bg-slate-700/60 rounded-lg p-4 text-xl font-medium font-mono">9</button>
+        <button onclick="clearBuffer()" class="calc-btn bg-rose-950/80 text-rose-400 rounded-lg p-4 text-sm font-bold tracking-wider">AC</button>
+        <button onclick="backspace()" class="calc-btn bg-slate-800 text-slate-300 rounded-lg p-4 text-sm font-bold">DEL</button>
+
+        <button onclick="appendToken('4')" class="calc-btn bg-slate-700/60 rounded-lg p-4 text-xl font-medium font-mono">4</button>
+        <button onclick="appendToken('5')" class="calc-btn bg-slate-700/60 rounded-lg p-4 text-xl font-medium font-mono">5</button>
+        <button onclick="appendToken('6')" class="calc-btn bg-slate-700/60 rounded-lg p-4 text-xl font-medium font-mono">6</button>
+        <button onclick="appendToken('*')" class="calc-btn bg-slate-800 text-cyan-400 rounded-lg p-4 text-xl font-mono">×</button>
+        <button onclick="appendToken('/')" class="calc-btn bg-slate-800 text-cyan-400 rounded-lg p-4 text-xl font-mono">÷</button>
+
+        <button onclick="appendToken('1')" class="calc-btn bg-slate-700/60 rounded-lg p-4 text-xl font-medium font-mono">1</button>
+        <button onclick="appendToken('2')" class="calc-btn bg-slate-700/60 rounded-lg p-4 text-xl font-medium font-mono">2</button>
+        <button onclick="appendToken('3')" class="calc-btn bg-slate-700/60 rounded-lg p-4 text-xl font-medium font-mono">3</button>
+        <button onclick="appendToken('+')" class="calc-btn bg-slate-800 text-cyan-400 rounded-lg p-4 text-xl font-mono">+</button>
+        <button onclick="appendToken('-')" class="calc-btn bg-slate-800 text-cyan-400 rounded-lg p-4 text-xl font-mono">−</button>
+
+        <button onclick="appendToken('0')" class="calc-btn bg-slate-700/60 rounded-lg p-4 text-xl font-medium font-mono">0</button>
+        <button onclick="appendToken('.')" class="calc-btn bg-slate-700/60 rounded-lg p-4 text-xl font-medium font-mono">.</button>
+        <button onclick="appendToken('pi')" class="calc-btn bg-slate-800 text-slate-300 rounded-lg p-4 font-mono">π</button>
+        <button onclick="executeCalculation()" class="calc-btn col-span-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-lg p-4 text-xl font-bold shadow-lg shadow-cyan-500/20">=</button>
+    </div>
+
+    <script>
+        const inputBuf = document.getElementById('input-buffer');
+        const latexDisplay = document.getElementById('latex-display');
+        const numDisplay = document.getElementById('numerical-display');
+
+        function appendToken(token) {
+            inputBuf.value += token;
+            renderPreview(inputBuf.value);
+        }
+
+        function clearBuffer() {
+            inputBuf.value = '';
+            latexDisplay.innerHTML = '';
+            numDisplay.innerText = '';
+        }
+
+        function backspace() {
+            inputBuf.value = inputBuf.value.slice(0, -1);
+            renderPreview(inputBuf.value);
+        }
+
+        function renderPreview(text) {
+            if (!text) { latexDisplay.innerHTML = ''; return; }
+            let formatted = text.replace(/\*/g\(, '\cdot '\)).replace(/\//g\(, '\div '\));
+            try {
+                katex.render(formatted, latexDisplay, { throwOnError: false });
+            } catch (err) {}
+        }
+
+        async function executeCalculation() {
+            const rawExpr = inputBuf.value;
+            if(!rawExpr) return;
+
+            latexDisplay.innerHTML = `<span class="text-sm text-cyan-500 tracking-wider animate-pulse">COMPUTING CAS...</span>`;
+            
+            try {
+                const response = await fetch('/api/compute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ expression: rawExpr, precision: 120 })
+                });
+                
+                const data = await response.json();
+                if(data.status === 'success') {
+                    katex.render(data.latex_output, latexDisplay, { throwOnError: false });
+                    numDisplay.innerText = "= " + data.numerical_output;
+                } else {
+                    latexDisplay.innerHTML = `<span class="text-sm text-rose-500">Syntax Error</span>`;
+                }
+            } catch(e) {
+                latexDisplay.innerHTML = `<span class="text-sm text-rose-500">Computation Error</span>`;
+            }
+        }
+    </script>
+</body>
+  </html>
+  
