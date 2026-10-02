@@ -133,7 +133,6 @@
             padding: 0.75rem;
             border-radius: 0.5rem;
             font-weight: 700;
-            grid-column: span 2;
             box-shadow: 0 10px 15px -3px rgba(6, 182, 212, 0.1);
         }
         .btn-equals:active {
@@ -160,6 +159,105 @@
             padding: 0.375rem;
             background-color: rgb(30, 41, 59);
             color: rgb(148, 163, 184);
+        }
+        .cas-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .cas-modal-overlay.active {
+            display: flex;
+        }
+        .cas-modal {
+            background: rgb(15, 23, 42);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            max-width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: rgb(226, 232, 240);
+        }
+        .cas-modal h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: rgb(34, 211, 238);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .cas-modal-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .cas-modal-button {
+            background-color: rgb(30, 41, 59);
+            color: rgb(226, 232, 240);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.1s ease;
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+        }
+        .cas-modal-button:active {
+            background-color: rgb(51, 65, 85);
+        }
+        .cas-input-section {
+            margin-bottom: 0.75rem;
+        }
+        .cas-input-section label {
+            font-size: 0.7rem;
+            color: rgb(148, 163, 184);
+            display: block;
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .cas-input-section input {
+            background-color: rgba(51, 65, 85, 0.5);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 0.375rem;
+            color: rgb(34, 197, 94);
+            padding: 0.375rem 0.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            width: 100%;
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        .cas-template-display {
+            background-color: rgba(2, 6, 23, 0.8);
+            border-left: 2px solid rgb(34, 211, 238);
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            color: rgb(34, 197, 94);
+        }
+        .cas-modal-close {
+            background-color: rgba(159, 18, 57, 0.4);
+            color: rgb(251, 113, 133);
+            border: 1px solid rgba(159, 18, 57, 0.5);
+            border-radius: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 0.75rem;
         }
         .header-bar {
             background: linear-gradient(to bottom, rgb(15, 23, 42), rgb(2, 6, 23));
@@ -197,20 +295,77 @@
 
     <!-- More Functions Row (Toggle) -->
     <div id="more-functions-row" class="more-functions" style="display: none;">
-        <button onclick="appendToken('sin('); toggleMore();" class="calc-btn btn-scientific">sin</button>
+        <button onclick="appendToken('sin('); toggleMore();\" class=\"calc-btn btn-scientific\">sin</button>
         <button onclick="appendToken('cos('); toggleMore();" class="calc-btn btn-scientific">cos</button>
         <button onclick="appendToken('tan('); toggleMore();" class="calc-btn btn-scientific">tan</button>
         <button onclick="appendToken('exp('); toggleMore();" class="calc-btn btn-scientific">exp</button>
         <button onclick="appendToken('ln('); toggleMore();" class="calc-btn btn-scientific">ln</button>
+        <button onclick="appendToken('asin('); toggleMore();" class="calc-btn btn-scientific">asin</button>
+        <button onclick="appendToken('acos('); toggleMore();" class="calc-btn btn-scientific">acos</button>
+        <button onclick="appendToken('atan('); toggleMore();" class="calc-btn btn-scientific">atan</button>
+        <button onclick="appendToken('sinh('); toggleMore();" class="calc-btn btn-scientific">sinh</button>
+        <button onclick="appendToken('cosh('); toggleMore();" class="calc-btn btn-scientific">cosh</button>
+        <button onclick="appendToken('tanh('); toggleMore();" class="calc-btn btn-scientific">tanh</button>
+        <button onclick="appendToken('abs('); toggleMore();" class="calc-btn btn-scientific">abs</button>
+        <button onclick="appendToken('factorial('); toggleMore();" class="calc-btn btn-scientific">!</button>
+        <button onclick="appendToken('E');" class="calc-btn btn-scientific">e</button>
+        <button onclick="toggleMore();" class="calc-btn btn-scientific" style="color: rgb(251, 113, 133);">↓</button>
+    </div>
+
+    <!-- CAS Modals -->
+    <div id="derivative-modal" class="cas-modal-overlay">
+        <div class="cas-modal">
+            <h3>d/dx Derivative</h3>
+            <p style="font-size: 0.75rem; color: rgb(148, 163, 184); margin-bottom: 0.75rem;">Enter the expression to differentiate</p>
+            <div class="cas-input-section">
+                <label>Expression</label>
+                <input type="text" id="deriv-expr" placeholder="e.g., x^2 + 3*x" readonly>
+            </div>
+            <div class="cas-template-display" id="deriv-template">d/dx [ x^2 + 3*x ]</div>
+            <button class="calc-btn btn-operator" style="width: 100%; margin-bottom: 0.5rem;" onclick="insertDerivative()">Insert</button>
+            <button class="cas-modal-close" onclick="closeCasModal('derivative-modal')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="integral-modal" class="cas-modal-overlay">
+        <div class="cas-modal">
+            <h3>∫ Integral</h3>
+            <p style="font-size: 0.75rem; color: rgb(148, 163, 184); margin-bottom: 0.75rem;">Enter the expression to integrate</p>
+            <div class="cas-input-section">
+                <label>Expression</label>
+                <input type="text" id="integ-expr" placeholder="e.g., x^2 + 3*x" readonly>
+            </div>
+            <div class="cas-template-display" id="integ-template">∫ [ x^2 + 3*x ] dx</div>
+            <button class="calc-btn btn-operator" style="width: 100%; margin-bottom: 0.5rem;" onclick="insertIntegral()">Insert</button>
+            <button class="cas-modal-close" onclick="closeCasModal('integral-modal')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="limit-modal" class="cas-modal-overlay">
+        <div class="cas-modal">
+            <h3>lim Limit</h3>
+            <p style="font-size: 0.75rem; color: rgb(148, 163, 184); margin-bottom: 0.75rem;">Enter expression and limit point</p>
+            <div class="cas-input-section">
+                <label>Expression</label>
+                <input type="text" id="limit-expr" placeholder="e.g., sin(x)/x" readonly>
+            </div>
+            <div class="cas-input-section">
+                <label>As x approaches</label>
+                <input type="text" id="limit-point" placeholder="e.g., 0" readonly>
+            </div>
+            <div class="cas-template-display" id="limit-template">lim x→0 [ sin(x)/x ]</div>
+            <button class="calc-btn btn-operator" style="width: 100%; margin-bottom: 0.5rem;" onclick="insertLimit()">Insert</button>
+            <button class="cas-modal-close" onclick="closeCasModal('limit-modal')">Cancel</button>
+        </div>
     </div>
 
     <!-- Main Keypad -->
     <div class="keypad-container safe-area-inset-bottom">
         <!-- Row 1: Advanced functions + X -->
-        <button onclick="appendToken('diff(')" class="calc-btn btn-scientific">d/dx</button>
-        <button onclick="appendToken('integrate(')" class="calc-btn btn-scientific">∫</button>
-        <button onclick="appendToken('limit(')" class="calc-btn btn-scientific">lim</button>
-        <button onclick="toggleMore();" class="calc-btn btn-scientific" title="Toggle sin, cos, tan, exp, ln">MORE</button>
+        <button onclick="openCasModal('derivative-modal');" class="calc-btn btn-scientific">d/dx</button>
+        <button onclick="openCasModal('integral-modal');" class="calc-btn btn-scientific">∫</button>
+        <button onclick="openCasModal('limit-modal');" class="calc-btn btn-scientific">lim</button>
+        <button onclick="toggleMore();" class="calc-btn btn-scientific" title="Toggle MORE functions">MORE</button>
         <button onclick="appendToken('x')" class="calc-btn btn-number" style="color: rgb(251, 191, 36); font-weight: 700;">X</button>
 
         <!-- Row 2: sqrt, power, log, parens -->
@@ -241,7 +396,7 @@
         <button onclick="appendToken('+')" class="calc-btn btn-operator">+</button>
         <button onclick="appendToken('-')" class="calc-btn btn-operator">−</button>
 
-        <!-- Row 6: 0 . π Ans = -->
+        <!-- Row 6: 0 . π Ans = (exactly 5 equal columns) -->
         <button onclick="appendToken('0')" class="calc-btn btn-number">0</button>
         <button onclick="appendToken('.')" class="calc-btn btn-number">.</button>
         <button onclick="appendToken('pi')" class="calc-btn btn-scientific">π</button>
@@ -256,6 +411,7 @@
         const moreRow = document.getElementById('more-functions-row');
         
         let lastAnswer = '';
+        let casCurrentExpr = ''; // Store current expression for CAS operations
 
         function appendToken(token) {
             inputBuf.value += token;
@@ -304,6 +460,70 @@
             }
         }
 
+        // CAS Modal Functions
+        function openCasModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.add('active');
+            casCurrentExpr = inputBuf.value;
+            
+            if (modalId === 'derivative-modal') {
+                document.getElementById('deriv-expr').value = casCurrentExpr;
+                updateDerivativeTemplate();
+            } else if (modalId === 'integral-modal') {
+                document.getElementById('integ-expr').value = casCurrentExpr;
+                updateIntegralTemplate();
+            } else if (modalId === 'limit-modal') {
+                document.getElementById('limit-expr').value = casCurrentExpr;
+                updateLimitTemplate();
+            }
+        }
+
+        function closeCasModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('active');
+        }
+
+        function updateDerivativeTemplate() {
+            const expr = document.getElementById('deriv-expr').value;
+            document.getElementById('deriv-template').innerText = `d/dx [ ${expr} ]`;
+        }
+
+        function updateIntegralTemplate() {
+            const expr = document.getElementById('integ-expr').value;
+            document.getElementById('integ-template').innerText = `∫ [ ${expr} ] dx`;
+        }
+
+        function updateLimitTemplate() {
+            const expr = document.getElementById('limit-expr').value;
+            const point = document.getElementById('limit-point').value || 'a';
+            document.getElementById('limit-template').innerText = `lim x→${point} [ ${expr} ]`;
+        }
+
+        function insertDerivative() {
+            const expr = document.getElementById('deriv-expr').value;
+            if (!expr) return;
+            inputBuf.value = `diff(${expr})`;
+            renderPreview(inputBuf.value);
+            closeCasModal('derivative-modal');
+        }
+
+        function insertIntegral() {
+            const expr = document.getElementById('integ-expr').value;
+            if (!expr) return;
+            inputBuf.value = `integrate(${expr})`;
+            renderPreview(inputBuf.value);
+            closeCasModal('integral-modal');
+        }
+
+        function insertLimit() {
+            const expr = document.getElementById('limit-expr').value;
+            const point = document.getElementById('limit-point').value || '0';
+            if (!expr) return;
+            inputBuf.value = `limit(${expr}, x, ${point})`;
+            renderPreview(inputBuf.value);
+            closeCasModal('limit-modal');
+        }
+
         async function executeCalculation() {
             const rawExpr = inputBuf.value;
             if (!rawExpr) return;
@@ -338,6 +558,13 @@
                 e.target.blur();
             }
         }, { passive: false });
+
+        // Close CAS modals on background click
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('cas-modal-overlay')) {
+                e.target.classList.remove('active');
+            }
+        });
     </script>
 </body>
 </html>
