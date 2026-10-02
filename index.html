@@ -295,7 +295,7 @@
 
     <!-- More Functions Row (Toggle) -->
     <div id="more-functions-row" class="more-functions" style="display: none;">
-        <button onclick="appendToken('sin('); toggleMore();\" class=\"calc-btn btn-scientific\">sin</button>
+        <button onclick="appendToken('sin('); toggleMore();" class="calc-btn btn-scientific">sin</button>
         <button onclick="appendToken('cos('); toggleMore();" class="calc-btn btn-scientific">cos</button>
         <button onclick="appendToken('tan('); toggleMore();" class="calc-btn btn-scientific">tan</button>
         <button onclick="appendToken('exp('); toggleMore();" class="calc-btn btn-scientific">exp</button>
@@ -412,13 +412,26 @@
         
         let lastAnswer = '';
         let casCurrentExpr = ''; // Store current expression for CAS operations
+        
+        // Hidden CAS state: tracks the active CAS operation
+        let casState = {
+            active: false,           // Whether CAS mode is active
+            type: null,              // 'derivative', 'integral', or 'limit'
+            displayText: '',         // Natural-form display text (e.g., "d/dx [x^2]")
+            baseExpr: '',            // Base expression
+            limitPoint: ''           // For limit only
+        };
 
         function appendToken(token) {
+            // Exit CAS mode on normal keypad input
+            exitCasMode();
             inputBuf.value += token;
             renderPreview(inputBuf.value);
         }
 
         function appendAns() {
+            // Exit CAS mode on normal keypad input
+            exitCasMode();
             if (lastAnswer === '') {
                 inputBuf.value += '0';
             } else {
@@ -440,11 +453,16 @@
             latexDisplay.innerHTML = '';
             numDisplay.innerText = '';
             moreRow.style.display = 'none';
+            casState = { active: false, type: null, displayText: '', baseExpr: '', limitPoint: '' };
         }
 
         function backspace() {
             inputBuf.value = inputBuf.value.slice(0, -1);
             renderPreview(inputBuf.value);
+            // If buffer becomes empty after backspace, exit CAS mode
+            if (!inputBuf.value) {
+                exitCasMode();
+            }
         }
 
         function renderPreview(text) {
@@ -460,7 +478,12 @@
             }
         }
 
-        // CAS Modal Functions
+        // ===== CAS State Management =====
+        function exitCasMode() {
+            casState = { active: false, type: null, displayText: '', baseExpr: '', limitPoint: '' };
+        }
+
+        // ===== CAS Modal Functions =====
         function openCasModal(modalId) {
             const modal = document.getElementById(modalId);
             modal.classList.add('active');
@@ -499,19 +522,42 @@
             document.getElementById('limit-template').innerText = `lim x→${point} [ ${expr} ]`;
         }
 
+        // ===== Insert Functions: Store Hidden CAS State =====
         function insertDerivative() {
             const expr = document.getElementById('deriv-expr').value;
             if (!expr) return;
-            inputBuf.value = `diff(${expr})`;
-            renderPreview(inputBuf.value);
+            
+            // Store hidden CAS state
+            casState = {
+                active: true,
+                type: 'derivative',
+                displayText: `d/dx [ ${expr} ]`,
+                baseExpr: expr,
+                limitPoint: ''
+            };
+            
+            // Display natural form
+            inputBuf.value = casState.displayText;
+            renderPreview(casState.displayText);
             closeCasModal('derivative-modal');
         }
 
         function insertIntegral() {
             const expr = document.getElementById('integ-expr').value;
             if (!expr) return;
-            inputBuf.value = `integrate(${expr})`;
-            renderPreview(inputBuf.value);
+            
+            // Store hidden CAS state
+            casState = {
+                active: true,
+                type: 'integral',
+                displayText: `∫ [ ${expr} ] dx`,
+                baseExpr: expr,
+                limitPoint: ''
+            };
+            
+            // Display natural form
+            inputBuf.value = casState.displayText;
+            renderPreview(casState.displayText);
             closeCasModal('integral-modal');
         }
 
@@ -519,14 +565,37 @@
             const expr = document.getElementById('limit-expr').value;
             const point = document.getElementById('limit-point').value || '0';
             if (!expr) return;
-            inputBuf.value = `limit(${expr}, x, ${point})`;
-            renderPreview(inputBuf.value);
+            
+            // Store hidden CAS state
+            casState = {
+                active: true,
+                type: 'limit',
+                displayText: `lim x→${point} [ ${expr} ]`,
+                baseExpr: expr,
+                limitPoint: point
+            };
+            
+            // Display natural form
+            inputBuf.value = casState.displayText;
+            renderPreview(casState.displayText);
             closeCasModal('limit-modal');
         }
 
+        // ===== Execute: Translate Hidden CAS State to SymPy Syntax =====
         async function executeCalculation() {
-            const rawExpr = inputBuf.value;
+            let rawExpr = inputBuf.value;
             if (!rawExpr) return;
+
+            // Translate hidden CAS state to SymPy syntax if in CAS mode
+            if (casState.active && casState.type) {
+                if (casState.type === 'derivative') {
+                    rawExpr = `diff(${casState.baseExpr})`;
+                } else if (casState.type === 'integral') {
+                    rawExpr = `integrate(${casState.baseExpr})`;
+                } else if (casState.type === 'limit') {
+                    rawExpr = `limit(${casState.baseExpr}, x, ${casState.limitPoint})`;
+                }
+            }
 
             latexDisplay.innerHTML = '<span class="text-sm text-cyan-500 tracking-wider">Computing...</span>';
             
@@ -542,6 +611,8 @@
                     katex.render(data.latex_output, latexDisplay, { throwOnError: false });
                     numDisplay.innerText = '= ' + data.numerical_output;
                     lastAnswer = data.numerical_output;
+                    // Exit CAS mode after successful execution
+                    exitCasMode();
                 } else {
                     latexDisplay.innerHTML = '<span class="text-sm text-rose-500">Syntax Error</span>';
                     numDisplay.innerText = '';
