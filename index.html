@@ -295,7 +295,7 @@
 
     <!-- More Functions Row (Toggle) -->
     <div id="more-functions-row" class="more-functions" style="display: none;">
-        <button onclick="appendToken('sin('); toggleMore();\" class=\"calc-btn btn-scientific\">sin</button>
+        <button onclick="appendToken('sin('); toggleMore();" class="calc-btn btn-scientific">sin</button>
         <button onclick="appendToken('cos('); toggleMore();" class="calc-btn btn-scientific">cos</button>
         <button onclick="appendToken('tan('); toggleMore();" class="calc-btn btn-scientific">tan</button>
         <button onclick="appendToken('exp('); toggleMore();" class="calc-btn btn-scientific">exp</button>
@@ -411,7 +411,14 @@
         const moreRow = document.getElementById('more-functions-row');
         
         let lastAnswer = '';
-        let casCurrentExpr = ''; // Store current expression for CAS operations
+        let casCurrentExpr = '';
+        
+        // Hidden CAS operation object: stores the real operation to send to backend
+        let casOperation = {
+            type: null,  // 'derivative', 'integral', or 'limit'
+            expression: '',
+            limitPoint: null
+        };
 
         function appendToken(token) {
             inputBuf.value += token;
@@ -440,6 +447,7 @@
             latexDisplay.innerHTML = '';
             numDisplay.innerText = '';
             moreRow.style.display = 'none';
+            casOperation = { type: null, expression: '', limitPoint: null };
         }
 
         function backspace() {
@@ -502,7 +510,16 @@
         function insertDerivative() {
             const expr = document.getElementById('deriv-expr').value;
             if (!expr) return;
-            inputBuf.value = `diff(${expr})`;
+            
+            // Set hidden CAS operation
+            casOperation = {
+                type: 'derivative',
+                expression: expr,
+                limitPoint: null
+            };
+            
+            // Display clean notation in input buffer (visible)
+            inputBuf.value = `d/dx [ ${expr} ]`;
             renderPreview(inputBuf.value);
             closeCasModal('derivative-modal');
         }
@@ -510,7 +527,16 @@
         function insertIntegral() {
             const expr = document.getElementById('integ-expr').value;
             if (!expr) return;
-            inputBuf.value = `integrate(${expr})`;
+            
+            // Set hidden CAS operation
+            casOperation = {
+                type: 'integral',
+                expression: expr,
+                limitPoint: null
+            };
+            
+            // Display clean notation in input buffer (visible)
+            inputBuf.value = `∫ [ ${expr} ] dx`;
             renderPreview(inputBuf.value);
             closeCasModal('integral-modal');
         }
@@ -519,22 +545,41 @@
             const expr = document.getElementById('limit-expr').value;
             const point = document.getElementById('limit-point').value || '0';
             if (!expr) return;
-            inputBuf.value = `limit(${expr}, x, ${point})`;
+            
+            // Set hidden CAS operation
+            casOperation = {
+                type: 'limit',
+                expression: expr,
+                limitPoint: point
+            };
+            
+            // Display clean notation in input buffer (visible)
+            inputBuf.value = `lim x→${point} [ ${expr} ]`;
             renderPreview(inputBuf.value);
             closeCasModal('limit-modal');
         }
 
         async function executeCalculation() {
-            const rawExpr = inputBuf.value;
-            if (!rawExpr) return;
+            const displayExpr = inputBuf.value;
+            if (!displayExpr) return;
 
             latexDisplay.innerHTML = '<span class="text-sm text-cyan-500 tracking-wider">Computing...</span>';
+            
+            // Translate hidden CAS operation to backend syntax if one is set
+            let backendExpr = displayExpr;
+            if (casOperation.type === 'derivative') {
+                backendExpr = `diff(${casOperation.expression})`;
+            } else if (casOperation.type === 'integral') {
+                backendExpr = `integrate(${casOperation.expression})`;
+            } else if (casOperation.type === 'limit') {
+                backendExpr = `limit(${casOperation.expression}, x, ${casOperation.limitPoint})`;
+            }
             
             try {
                 const response = await fetch('/api/compute', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ expression: rawExpr, precision: 120 })
+                    body: JSON.stringify({ expression: backendExpr, precision: 120 })
                 });
                 
                 const data = await response.json();
@@ -542,6 +587,8 @@
                     katex.render(data.latex_output, latexDisplay, { throwOnError: false });
                     numDisplay.innerText = '= ' + data.numerical_output;
                     lastAnswer = data.numerical_output;
+                    // Clear CAS operation after successful computation
+                    casOperation = { type: null, expression: '', limitPoint: null };
                 } else {
                     latexDisplay.innerHTML = '<span class="text-sm text-rose-500">Syntax Error</span>';
                     numDisplay.innerText = '';
